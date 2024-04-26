@@ -11,7 +11,6 @@ app.use(express.json());
 app.use("/api/v1", user); // Corrected from User to user
 
 mongoConnect(process.env.URI).then(async () => {
-
     app.listen(process.env.PORT, () => {
       console.log(`Server is listening at http://localhost:${process.env.PORT}`);
     });
