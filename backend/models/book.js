@@ -1,8 +1,6 @@
-//SCHEMA ---------------------------------------------------->
-
 const mongoose = require("mongoose");
 
-const user = new mongoose.Schema({
+const bookSchema = new mongoose.Schema({
     url: {
         type: String,
         required: true,
@@ -26,16 +24,10 @@ const user = new mongoose.Schema({
     language: {
         type: String,
         required: true,
-    },
-    price: {
-        type: String,
-        required: true,
-    },
-},
-    {
-        timestamps: true
     }
-);
+},
+{
+    timestamps: true
+});
 
-module.exports = mongoose.model("books", book)     //inside bracket we are putting reference.
-//without bracket we are targetting functions.
+module.exports = mongoose.model("Book", bookSchema);
