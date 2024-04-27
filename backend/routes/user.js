@@ -2,6 +2,7 @@ const router = require("express").Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { authenticateToken } = require("../routes/userAuth");
 
 // Sign-Up Page
 router.post("/sign-up", async (req, res) => {
@@ -81,6 +82,49 @@ router.post("/sign-in", async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
+
+//get-user-information
+router.get("/get-user-information", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.headers;
+      const data = await User.findById(id).select('-passwor  d');
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error("Error getting user information:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // update address
+  router.put("/update-address", authenticateToken, async (req, res) => {
+    try {
+        const userId = req.headers.id; // Extract user ID from headers
+
+        if (!userId) {
+            return res.status(400).json({ message: "User ID not provided in headers" });
+        }
+
+        const { address } = req.body;
+
+        if (!address) {
+            return res.status(400).json({ message: "Address is required" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, { address: address }, { new: true });
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({ message: "Address updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Error updating address:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
+
 module.exports = router;
 
 
