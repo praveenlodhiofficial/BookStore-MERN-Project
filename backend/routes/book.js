@@ -2,13 +2,12 @@ const router = require("express").Router();
 const User = require("../models/user")
 const jwt = require("jsonwebtoken");
 const Book = require("../models/book"); // Assuming you have a Book model defined
-const { authenticateToken } = require("./userAuth");
+const authMiddleware = require('../routes/userAuth')
 
 // Add book --admin
-router.post("/add-book", authenticateToken, async (req, res) => {
+router.post("/add-book", authMiddleware(), async (req, res) => {
     try {
-        const { id } = req.headers;
-        const user = await User.findById(id);
+        const user = await User.findById(req.userID);
         if (user.role !== "admin") {
             return res
                 .status(400)
@@ -38,7 +37,7 @@ router.post("/add-book", authenticateToken, async (req, res) => {
 });
 
 //update book
-router.put("/update-book/:bookid", authenticateToken, async (req, res) => {
+router.put("/update-book/:bookid", authMiddleware(), async (req, res) => {
     try {
         const { bookid } = req.params; // Use req.params to get bookid
         const { url, title, author, price, desc, language } = req.body; // Destructure req.body
@@ -67,16 +66,22 @@ router.put("/update-book/:bookid", authenticateToken, async (req, res) => {
 });
 
 // Delete Book Route
-router.delete("/delete-book", authenticateToken, async (req, res) => {
+router.delete("/delete-book/:bookid", authMiddleware(), async (req, res) => {
     try {
-        const { bookid } = req.headers; // Assuming you're passing bookid in headers
+        const { bookid } = req.params; // Retrieve bookid from URL params
 
         // Find the book by ID and delete it
-        await Book.findByIdAndDelete(bookid);
+        const deletedBook = await Book.findByIdAndDelete(bookid);
+
+        // Check if the book was found and deleted
+        if (!deletedBook) {
+            return res.status(404).json({ message: "Book not found" });
+        }
 
         // Respond with a success message if deletion is successful
         return res.status(200).json({
             message: "Book deleted successfully!",
+            deletedBook: deletedBook // Optionally, you can return the deleted book
         });
     } catch (error) {
         // If an error occurs, handle it here
@@ -106,7 +111,7 @@ router.get("/get-all-books", async (req, res) => {
 // Get Recently Added Books Route (limit 4)
 router.get("/get-recent-books", async (req, res) => {
     try {
-        // Find the 4 most recently added books, sorted by creation date in ascending order
+        // Find the 4 most recently added books, sorted by creation date in descending order
         const books = await Book.find().sort({ createdAt: -1 }).limit(4);
 
         // Respond with the retrieved books
@@ -145,5 +150,6 @@ router.get("/get-book-by-id/:id", async (req, res) => {
         return res.status(500).json({ message: "An error occurred" });
     }
 });
+
 
 module.exports = router;

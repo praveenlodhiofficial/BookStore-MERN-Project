@@ -2,7 +2,7 @@ const router = require("express").Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { authenticateToken } = require("../routes/userAuth");
+const authMiddleware = require('../routes/userAuth')
 
 // Sign-Up Page
 router.post("/sign-up", async (req, res) => {
@@ -62,18 +62,34 @@ router.post("/sign-in", async (req, res) => {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        await bcrypt.compare(password, existingUser.password, (err, data) => {
-            if (data) {
-                const authClaims = [
-                    { name: existingUser.username },
-                    { role: existingUser.role },
-                ];
-                const token = jwt.sign({ authClaims }, "bookstore123");
-                res.status(200).json({ id: existingUser._id, role: existingUser.role, token: token });
-            } else {
-                return res.status(400).json({ message: "Invalid credentials" });
-            }
-        });
+        // await bcrypt.compare(password, existingUser.password, (err, data) => {
+        //     if (data) {
+        //         const authClaims = [
+        //             { name: existingUser.username },
+        //             { role: existingUser.role },
+        //         ];
+        //         const token = jwt.sign({ authClaims }, "bookstore123", {
+        //             expiresIn: "30d",
+        //         });
+        //         res.status(200).json({ id: existingUser._id, role: existingUser.role, token: token });
+        //     } else {
+        //         return res.status(400).json({ message: "Invalid credentials" });
+        //     }
+        // });
+        const isMatch = await bcrypt.compare(password, existingUser.password);
+
+        if (isMatch) {
+            const secretKey = process.env.JWT_SECRET_KEY || 'bookstore123';
+            const token = jwt.sign({ _id: existingUser.id }, secretKey);
+
+            return res.status(200).json({
+                id: existingUser._id,
+                message: "Login successful",
+                token,
+            });
+        } else {
+            return res.status(404).json({ error: "Invalid Credentials!!!" });
+        }
 
     } catch (error) {
         console.error(error);
@@ -82,7 +98,7 @@ router.post("/sign-in", async (req, res) => {
 });
 
 //get-user-information
-router.get("/get-user-information", authenticateToken, async (req, res) => {
+router.get("/get-user-information", authMiddleware(), async (req, res) => {
     try {
       const { id } = req.headers;
       const data = await User.findById(id).select('-passwor  d');
@@ -94,7 +110,7 @@ router.get("/get-user-information", authenticateToken, async (req, res) => {
   });
 
   // update address
-  router.put("/update-address", authenticateToken, async (req, res) => {
+  router.put("/update-address", authMiddleware(), async (req, res) => {
     try {
         const userId = req.headers.id; // Extract user ID from headers
 

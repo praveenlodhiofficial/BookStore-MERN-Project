@@ -1,7 +1,7 @@
 //SCHEMA ---------------------------------------------------->
 
 const mongoose = require("mongoose");
-
+const jwt = require('jsonwebtoken')
 const user = new mongoose.Schema({
     username: {
         type: String,
@@ -63,4 +63,21 @@ const user = new mongoose.Schema({
         timestamps: true
     }
 );
+
+user.methods.generateToken = async function () {
+    try {
+        return jwt.sign(
+            {
+                userId: this._id.toString(),
+                email: this.email,
+            },
+            "bookstore123",
+            {
+                expiresIn: "30d",
+            }
+        );
+    } catch (error) {
+        console.error("Token Error: ", error);
+    }
+};
 module.exports = mongoose.model("user", user)
