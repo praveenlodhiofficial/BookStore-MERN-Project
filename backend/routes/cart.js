@@ -1,15 +1,14 @@
 const router = require('express').Router();
-const { authenticateToken } = require("./userAuth");
-const User = require("./models/User"); // Assuming you have a User model defined
+const User = require('../models/user')
+const authMiddleware = require('../routes/userAuth')
 
 // Route to add a book to the cart
-router.put("/add-to-cart", authenticateToken, async (req, res) => {
+router.put("/add-to-cart", authMiddleware(), async (req, res) => {
     try {
-        // Extracting bookid and id from request headers
-        const { bookid, id } = req.headers;
-        
+        const {_id} = req.user;
+        const { bookid } = req.body;
         // Finding user data by id
-        const userData = await User.findById(id);
+        const userData = await User.findById(_id);
 
         // Checking if the book is already in the user's cart
         const isBookinCart = userData.cart.includes(bookid);
@@ -22,7 +21,7 @@ router.put("/add-to-cart", authenticateToken, async (req, res) => {
             });
         } else {
             // If book is not in cart, add it to the cart
-            await User.findByIdAndUpdate(id, {
+            await User.findByIdAndUpdate(_id, {
                 $push: { cart: bookid }
             });
 
@@ -34,12 +33,12 @@ router.put("/add-to-cart", authenticateToken, async (req, res) => {
     } catch (error) {
         // If any error occurs, log it and return an error response
         console.log(error);
-        return res.status(500).json({ message: "An error occurred" });
+        return res.status(500).json({ message: "An error occurred: ",error });
     }
 });
 
 // Route to remove a book from the cart
-router.put("/remove-from-cart/:bookid", authenticateToken, async (req, res) => {
+router.put("/remove-from-cart/:bookid", authMiddleware(), async (req, res) => {
     try {
         const { bookid } = req.params; // Extracting bookid from route parameters
         const { id } = req.headers; // Extracting id from request headers

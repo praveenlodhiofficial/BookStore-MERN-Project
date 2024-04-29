@@ -1,15 +1,15 @@
 const router = require("express").Router();
 const User = require("../models/user");
-const { authenticateToken } = require("./userAuth");
+const authMiddleware = require('../routes/userAuth')
 
 // Add book to favourites
-router.put("/add-book-to-favourites", authenticateToken, async (req, res) => {
+router.put("/add-book-to-favourites", authMiddleware(), async (req, res) => {
     try {
         const { bookid } = req.body; // Extract bookid from request body
-        const { id } = req.user; // Extract user id from authenticated user
+        const { _id } = req.user; // Extract user id from authenticated user
 
         // Find the user by id
-        const userData = await User.findById(id);
+        const userData = await User.findById(_id);
 
         // Check if the book is already in favourites
         const isBookFavourite = userData.favourites.includes(bookid);
@@ -18,7 +18,7 @@ router.put("/add-book-to-favourites", authenticateToken, async (req, res) => {
         }
 
         // Add the book to favourites
-        await User.findByIdAndUpdate(id, { $push: { favourites: bookid } });
+        await User.findByIdAndUpdate(_id, { $push: { favourites: bookid } });
 
         return res.status(200).json({ message: "Book added to favourites" });
     } catch (error) {
@@ -28,7 +28,7 @@ router.put("/add-book-to-favourites", authenticateToken, async (req, res) => {
 });
 
 // Remove book from favourites
-router.put("/remove-book-from-favourite", authenticateToken, async (req, res) => {
+router.put("/remove-book-from-favourite", authMiddleware(), async (req, res) => {
     try {
         const { bookid } = req.body; // Assuming bookid is sent in the request body
         const { id } = req.user; // Assuming id is stored in the user object after authentication
@@ -55,7 +55,7 @@ router.put("/remove-book-from-favourite", authenticateToken, async (req, res) =>
 });
 
 // Get favourite books of a particular user
-router.get("/get-favourite-books", authenticateToken, async (req, res) => {
+router.get("/get-favourite-books", authMiddleware(), async (req, res) => {
     try {
         const { id } = req.user; // Extract user id from authenticated user
 

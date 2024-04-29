@@ -1,24 +1,24 @@
 const router = require("express").Router();
-const { authenticateToken } = require("./userAuth");
+const authMiddleware = require('../routes/userAuth')
 const Book = require("../models/book");
 const Order = require("../models/order");
 const User = require("../models/user"); // Import User model
 
 // Place order
-router.post("/place-order", authenticateToken, async (req, res) => {
+router.post("/place-order", authMiddleware(), async (req, res) => {
   try {
-    const { id } = req.user; // Assuming user ID is obtained from authentication middleware
+    const { _id } = req.user; // Assuming user ID is obtained from authentication middleware
     const { order } = req.body;
 
     for (const orderData of order) {
-      const newOrder = new Order({ user: id, book: orderData._id });
+      const newOrder = new Order({ user: _id, book: orderData._id });
       const orderDataFromDb = await newOrder.save();
 
       // Saving Order in user model
-      await User.findByIdAndUpdate(id, { $push: { orders: orderDataFromDb._id } });
+      await User.findByIdAndUpdate(_id, { $push: { orders: orderDataFromDb._id } });
 
       // Clearing cart
-      await User.findByIdAndUpdate(id, { $pull: { cart: orderData._id } });
+      await User.findByIdAndUpdate(_id, { $pull: { cart: orderData._id } });
     }
 
     return res.json({
@@ -32,7 +32,7 @@ router.post("/place-order", authenticateToken, async (req, res) => {
 });
 
 // Get order history of a particular user
-router.get("/get-order-history", authenticateToken, async (req, res) => {
+router.get("/get-order-history", authMiddleware(), async (req, res) => {
   try {
     const { id } = req.user; // Assuming user ID is obtained from authentication middleware
 
@@ -54,7 +54,7 @@ router.get("/get-order-history", authenticateToken, async (req, res) => {
 });
 
 // Get all orders (for admin)
-router.get("/get-all-orders", authenticateToken, async (req, res) => {
+router.get("/get-all-orders", authMiddleware(), async (req, res) => {
   try {
     const userData = await Order.find()
       .populate("book")
@@ -72,7 +72,7 @@ router.get("/get-all-orders", authenticateToken, async (req, res) => {
 });
 
 // Update order status (for admin)
-router.put("/update-status/:id", authenticateToken, async (req, res) => {
+router.put("/update-status/:id", authMiddleware(), async (req, res) => {
   try {
     const { id } = req.params;
     await Order.findByIdAndUpdate(id, { status: req.body.status });
